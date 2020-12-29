@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Pillsgood.Extensions.Options.Serializer
@@ -26,7 +27,7 @@ namespace Pillsgood.Extensions.Options.Serializer
             => services.ConfigureWithSerializer<TOptions>(Microsoft.Extensions.Options.Options.DefaultName, config, configureBinder);
 
         public static IServiceCollection ConfigureWithSerializer<T>(this IServiceCollection services,
-            string name, IConfiguration configuration, Action<BinderOptions> configureBinder)
+            string name, IConfiguration configuration, Action<BinderOptions> configureBinder, IFileProvider provider = null)
             where T : class
         {
             if (services == null)

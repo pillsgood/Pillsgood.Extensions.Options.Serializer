@@ -34,39 +34,32 @@ namespace Pillsgood.Extensions.Options.Serializer
 
         private void Update<T>(IConfigurationSection configurationSection, Action<T> applyChanges)
         {
-            foreach (var providerSource in _providerSources)
-            {
-                Update(configurationSection, applyChanges, providerSource);
-            }
+            Update(applyChanges, configurationSection.Key);
         }
 
         private void Update<T>(IConfigurationRoot configuration, Action<T> applyChanges)
         {
-            foreach (var providerSource in _providerSources)
-            {
-                Update(configuration.GetSection(typeof(T).Name), applyChanges, providerSource);
-            }
+            Update(applyChanges, configuration.GetSection(typeof(T).Name).Key);
         }
 
-        internal void Update<T>(IConfigurationSection section, Action<T> applyChanges,
-            FileConfigurationSource configurationSource)
+        private void Update<T>(Action<T> applyChanges, string key)
         {
-            var fileInfo = configurationSource.FileProvider.GetFileInfo(configurationSource.Path);
-            if (!fileInfo.Exists)
-            {
-                return;
-            }
-
-            var path = fileInfo.PhysicalPath;
-            var jObject = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(path));
-            var sectionObject = jObject.TryGetValue(section.Key, out var sectionToken)
-                ? JsonConvert.DeserializeObject<T>(sectionToken.ToString())
+            var jObjects = _providerSources.Select(source => source.FileProvider.GetFileInfo(source.Path))
+                .Where(info => info.Exists)
+                .ToDictionary(info => info.PhysicalPath,
+                    info => JsonConvert.DeserializeObject<JObject>(File.ReadAllText(info.PhysicalPath)));
+            var anyExists = jObjects.Any(pair => pair.Value.ContainsKey(key));
+            var (path, jObject) = anyExists
+                ? jObjects.First(pair => pair.Value.ContainsKey(key))
+                : jObjects.First();
+            var section = anyExists && jObject[key] != null
+                ? JsonConvert.DeserializeObject<T>(jObject[key].ToString())
                 : JsonConvert.DeserializeObject<T>("{}", new JsonSerializerSettings
                 {
                     DefaultValueHandling = DefaultValueHandling.Populate
                 });
-            applyChanges?.Invoke(sectionObject);
-            jObject[section.Key] = JObject.Parse(JsonConvert.SerializeObject(sectionObject));
+            applyChanges?.Invoke(section);
+            jObject[key] = JObject.Parse(JsonConvert.SerializeObject(section));
             File.WriteAllText(path, JsonConvert.SerializeObject(jObject, Formatting.Indented));
         }
     }
