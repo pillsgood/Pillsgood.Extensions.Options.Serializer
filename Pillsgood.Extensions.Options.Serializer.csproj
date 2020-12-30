@@ -6,6 +6,7 @@
         <RootNamespace>Pillsgood.Extensions.Options.Serializer</RootNamespace>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Pillsgood</Authors>
+        <LangVersion>9</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
